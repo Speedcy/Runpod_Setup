@@ -1,0 +1,14 @@
+# Python deps NOT covered by ComfyUI/requirements.txt — the IPAdapter-FaceID stack.
+#
+# IMPORTANT: do not add onnxruntime-gpu alongside onnxruntime. Installing both
+# breaks `import onnxruntime` (they share an install path). The FaceID loader
+# node runs with provider="CPU" and one portrait's face-detect is a few seconds.
+# For GPU face detection instead: remove onnxruntime, add ONLY onnxruntime-gpu,
+# and set the node's provider to CUDA.
+
+insightface==1.0.1
+onnxruntime==1.29.0
+
+# transitive deps of insightface, pinned for reproducibility
+onnx==1.22.0
+scikit-image==0.26.0

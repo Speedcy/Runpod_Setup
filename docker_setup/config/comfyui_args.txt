@@ -1,0 +1,7 @@
+# Extra ComfyUI CLI args, one per line. Lines starting with # are ignored.
+# --listen / --port / --enable-cors-header are always set by entrypoint.sh.
+#
+# Common options:
+# --lowvram
+# --preview-method auto
+# --use-pytorch-cross-attention

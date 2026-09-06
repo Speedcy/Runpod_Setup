@@ -1,0 +1,25 @@
+# Model manifest — downloaded on container start by /opt/download_models.sh.
+#
+# Format:  <dest> | <url> | <sha256>
+#   <dest>    path relative to ComfyUI/models/
+#   <url>     direct download URL. A .zip URL is extracted into <dest> (a dir).
+#   <sha256>  integrity check. Use "-" to skip (size-only check).
+#
+# sha256 values below were captured from the working files in the source env.
+# If a download fails the hash check it means upstream re-uploaded the file:
+# verify it, then paste the new hash here. Set STRICT_SHA256=1 to hard-fail.
+#
+# Gated Hugging Face repos: pass HF_TOKEN to the container.
+
+checkpoints/Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors | https://huggingface.co/RunDiffusion/Juggernaut-XL-v9/resolve/main/Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors | c9e3e68f89b8e38689e1097d4be4573cf308de4e3fd044c64ca697bdb4aa8bca
+
+loras/ip-adapter-faceid-plusv2_sdxl_lora.safetensors | https://huggingface.co/h94/IP-Adapter-FaceID/resolve/main/ip-adapter-faceid-plusv2_sdxl_lora.safetensors | f24b4bb2dad6638a09c00f151cde84991baf374409385bcbab53c1871a30cb7b
+
+ipadapter/ip-adapter-faceid-plusv2_sdxl.bin | https://huggingface.co/h94/IP-Adapter-FaceID/resolve/main/ip-adapter-faceid-plusv2_sdxl.bin | c6945d82b543700cc3ccbb98d363b837e9c596281607857c74b713a876daf5fb
+
+# ComfyUI IPAdapter-plus expects this exact filename; upstream it is
+# h94/IP-Adapter -> models/image_encoder/model.safetensors (ViT-H, 2.53 GB).
+clip_vision/CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors | https://huggingface.co/h94/IP-Adapter/resolve/main/models/image_encoder/model.safetensors | 6ca9667da1ca9e0b0f75e46bb030f7e011f44f86cbfb8d5a36590fcd7507b030
+
+# InsightFace face-analysis pack — zip, extracted to models/insightface/models/buffalo_l/
+insightface/models/buffalo_l | https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip | -

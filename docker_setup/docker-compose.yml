@@ -1,0 +1,35 @@
+services:
+  comfyui:
+    build:
+      context: .
+      args:
+        CUDA_IMAGE: nvidia/cuda:12.8.0-cudnn-runtime-ubuntu24.04
+    image: comfyui-faceid:latest
+    ports:
+      - "8188:8188"   # ComfyUI API / UI
+      - "8080:8080"   # FileBrowser (only if FILEBROWSER_ENABLE=1)
+    environment:
+      FILEBROWSER_ENABLE: "1"
+      FB_USER: "admin"
+      FB_PASS: "changeme"
+      DOWNLOAD_IN_BACKGROUND: "0"   # "1" = start server first, fetch weights in bg
+      # HF_TOKEN: "hf_xxx"          # only needed for gated repos
+      # STRICT_SHA256: "1"          # fail the start on any checksum mismatch
+      # COMFY_EXTRA_ARGS: "--lowvram"
+      # ANTHROPIC_API_KEY: "sk-ant-..."  # for the bundled `claude` CLI
+    volumes:
+      # OPTIONAL: cache weights + keep outputs across runs. Remove both lines
+      # for a truly stateless container (re-downloads weights every start).
+      - models:/opt/ComfyUI/models
+      - ./output:/opt/ComfyUI/output
+    gpus: all
+    # Older Compose without `gpus:` — use this instead:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - { driver: nvidia, count: 1, capabilities: [gpu] }
+    restart: unless-stopped
+
+volumes:
+  models:
