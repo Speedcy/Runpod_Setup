@@ -128,6 +128,24 @@ means logging in again on every fresh container.
 API-key auth is still available as an alternative: pass
 `-e ANTHROPIC_API_KEY=sk-ant-...`.
 
+## Docker Images options
+
+### Docker Hub (docker.io)
+
+- Docker's own official registry — the default one most tutorials assume.
+- Free tier lets you host public images with no real limits.
+- You'd sign up at hub.docker.com, pick a username — that becomes your <youruser>.
+- Command: docker login (logs into Docker Hub by default).
+
+### GHCR (ghcr.io — GitHub Container Registry)
+
+GitHub's registry, tied to your GitHub account.
+Also free for public images.
+Useful if you already have a GitHub account and want your images to live alongside your repos.
+Command: docker login ghcr.io with a GitHub username + a GitHub Personal Access Token (not your GitHub password) as the credential.
+
+
+
 ## Deploy on RunPod
 
 RunPod runs a **prebuilt image** pulled from a registry — it does not build the
@@ -144,6 +162,56 @@ docker push docker.io/<youruser>/comfyui-faceid:latest
 `ghcr.io/<youruser>/…` works too. Keep the repo public, or add credentials under
 RunPod → **Settings → Container Registry Auth** and select them in the template.
 RunPod pods don't expose a Docker daemon, so you can't build on the pod itself.
+
+#### 1. Create a GitHub Personal Access Token (PAT)
+
+Go to GitHub → your profile picture → **Settings** → **Developer settings** →
+**Personal access tokens** → **Tokens (classic)** → **Generate new token**.
+
+Give it these scopes:
+- `write:packages`
+- `read:packages` (included by `write:packages`, but fine to check both)
+
+Copy the token somewhere safe — GitHub only shows it once.
+
+#### 2. Log in to GHCR from Docker
+
+```bash
+echo YOUR_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
+
+Replace:
+- `YOUR_TOKEN` with the PAT you just created
+- `YOUR_GITHUB_USERNAME` with your GitHub username
+
+You should see `Login Succeeded`.
+
+#### 3. Build the image
+
+```bash
+cd docker_setup
+docker build -t ghcr.io/YOUR_GITHUB_USERNAME/comfyui-faceid:latest .
+```
+
+The trailing `.` matters — it means "build from this directory." First build
+can take a while (base layers + dependencies).
+
+#### 4. Push the image
+
+```bash
+docker push ghcr.io/YOUR_GITHUB_USERNAME/comfyui-faceid:latest
+```
+
+Since the account/repo context is private, the pushed package defaults to
+**private** visibility — which is what we want.
+
+#### 5. Keep the PAT for later
+
+You'll need this same PAT (or a similarly scoped one) again in:
+
+**RunPod → Settings → Container Registry Auth**
+
+so the pod can pull the private image in Step 2 (creating the template).
 
 ### 2. Create a template
 
