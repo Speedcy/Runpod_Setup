@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/comfyui-faceid
+  IMAGE_NAME: ghcr.io/speedcy/comfyui-faceid
 
 jobs:
   build-and-push:
