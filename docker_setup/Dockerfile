@@ -15,7 +15,9 @@ ARG CUDA_IMAGE=nvidia/cuda:12.8.0-cudnn-runtime-ubuntu24.04
 FROM ${CUDA_IMAGE}
 
 # --- pinned versions (match the environment this was captured from) ----------
-ARG COMFYUI_REF=b7ac98aafe41c8c8593b9f21238dab58a90424c6      # ComfyUI v0.26.2
+# ComfyUI release tag — see https://github.com/comfyanonymous/ComfyUI/releases
+# v0.26.2 == commit 7c8450ef2b720bb096f0d94ff933c62fd174cb57
+ARG COMFYUI_REF=v0.26.2
 ARG TORCH_VERSION=2.10.0
 ARG TORCHVISION_VERSION=0.25.0
 ARG TORCH_INDEX=https://download.pytorch.org/whl/cu128

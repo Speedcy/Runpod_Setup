@@ -1,9 +1,9 @@
 # Custom nodes cloned into the image at build time.
 # Format:  <repo url> | <commit>        (commit optional; blank = HEAD at build)
-# Pinned to the commits present in the source environment (2026-09).
+# Pinned to real commits verified against each remote (2026-09-08).
 
-https://github.com/ltdrdata/ComfyUI-Manager.git          | 8d5a95d1864de3660fcff872c893f6fb6b96ef9c
-https://github.com/kijai/ComfyUI-KJNodes.git             | e0c3fcb388464ffba5ef775bd29e2f793c032ca9
+https://github.com/ltdrdata/ComfyUI-Manager.git          | 4.2.2
+https://github.com/kijai/ComfyUI-KJNodes.git             | c9869eade9920a1b949de07c4a197156006bcceb
 https://github.com/cubiq/ComfyUI_IPAdapter_plus.git      | a0f451a5113cf9becb0847b92884cb10cbdec0ef
-https://github.com/MoonGoblinDev/Civicomfy.git           | 3e83e70824e26672c32615142217bb0006c8e562
-https://github.com/MadiatorLabs/ComfyUI-RunpodDirect.git | a59de479cbf06064d3a67f1457f48dbbd7f42e0a
+https://github.com/MoonGoblinDev/Civicomfy.git           | 555e984bbcb02fc955075cb8eb699a6884c51239
+https://github.com/MadiatorLabs/ComfyUI-RunpodDirect.git | 809065c9d2f3874dc215106784af49f3f0cb368f

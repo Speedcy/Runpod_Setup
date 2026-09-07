@@ -40,7 +40,7 @@ Pinned by build args (override with `--build-arg`):
 | arg | default | meaning |
 |-----|---------|---------|
 | `CUDA_IMAGE` | `nvidia/cuda:12.8.0-cudnn-runtime-ubuntu24.04` | base image |
-| `COMFYUI_REF` | `b7ac98a…` (v0.26.2) | ComfyUI commit |
+| `COMFYUI_REF` | `v0.26.2` | ComfyUI git ref (tag/branch/commit) |
 | `TORCH_VERSION` | `2.10.0` | torch/torchaudio, from the cu128 index |
 | `TORCHVISION_VERSION` | `0.25.0` | torchvision |
 
