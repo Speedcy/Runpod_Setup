@@ -16,12 +16,13 @@ services:
       # HF_TOKEN: "hf_xxx"          # only needed for gated repos
       # STRICT_SHA256: "1"          # fail the start on any checksum mismatch
       # COMFY_EXTRA_ARGS: "--lowvram"
-      # ANTHROPIC_API_KEY: "sk-ant-..."  # for the bundled `claude` CLI
     volumes:
       # OPTIONAL: cache weights + keep outputs across runs. Remove both lines
       # for a truly stateless container (re-downloads weights every start).
       - models:/opt/ComfyUI/models
       - ./output:/opt/ComfyUI/output
+      # keep the `claude` CLI subscription login across container restarts
+      - claude_config:/root/.claude
     gpus: all
     # Older Compose without `gpus:` — use this instead:
     # deploy:
@@ -33,3 +34,4 @@ services:
 
 volumes:
   models:
+  claude_config:

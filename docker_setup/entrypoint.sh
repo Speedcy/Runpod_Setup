@@ -55,7 +55,11 @@ fi
 # --- 3. ComfyUI ---------------------------------------------------
 cd "$COMFYUI_DIR"
 EXTRA_ARGS=""
-[ -s "$ARGS_FILE" ] && EXTRA_ARGS="$(grep -vE '^\s*#' "$ARGS_FILE" | tr '\n' ' ')"
+# `|| true`: grep exits 1 when the file is all comments/blank (the default), and
+# `set -o pipefail` would otherwise make that abort the whole entrypoint.
+if [ -s "$ARGS_FILE" ]; then
+    EXTRA_ARGS="$(grep -vE '^\s*#' "$ARGS_FILE" | tr '\n' ' ' || true)"
+fi
 
 echo "-- exec: python main.py --listen $COMFY_HOST --port $COMFY_PORT --enable-cors-header $EXTRA_ARGS ${COMFY_EXTRA_ARGS:-}"
 echo "================================================================"

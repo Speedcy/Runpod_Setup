@@ -25,7 +25,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     COMFYUI_DIR=/opt/ComfyUI \
     VENV_DIR=/opt/venv \
-    PATH=/opt/venv/bin:$PATH
+    PATH=/opt/venv/bin:$PATH \
+    CLAUDE_CONFIG_DIR=/root/.claude
 
 # --- OS packages -----------------------------------------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -57,10 +58,13 @@ RUN curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh |
 
 # --- Claude Code CLI --------------------------------------------------
 # Native install (no Node needed); lands in /root/.local/bin. Symlink onto the
-# default PATH so `docker exec <container> claude ...` just works. Auth via
-# ANTHROPIC_API_KEY (or `claude login` in an interactive exec).
+# default PATH so `docker exec <container> claude ...` just works.
+# Auth: `docker exec -it <container> claude` -> /login -> "Claude account with
+# subscription" -> open the printed URL in any browser -> paste the code back.
+# Persist the login by mounting a volume at $CLAUDE_CONFIG_DIR (/root/.claude).
 RUN curl -fsSL https://claude.ai/install.sh | bash \
     && ln -sf /root/.local/bin/claude /usr/local/bin/claude \
+    && mkdir -p /root/.claude \
     && claude --version
 
 # --- app files -------------------------------------------------------

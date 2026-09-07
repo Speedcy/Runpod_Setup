@@ -58,6 +58,7 @@ docker run --gpus all -p 8188:8188 -p 8080:8080 \
   -e FILEBROWSER_ENABLE=1 -e FB_PASS=changeme \
   -v comfy_models:/opt/ComfyUI/models \
   -v "$PWD/output:/opt/ComfyUI/output" \
+  -v claude_config:/root/.claude \
   comfyui-faceid:latest
 ```
 
@@ -81,7 +82,7 @@ volume is required** — without one, weights are re-fetched each start.
 | `STRICT_SHA256` | `0` | `1` → abort start on any checksum mismatch |
 | `COMFY_EXTRA_ARGS` | – | appended to `python main.py …` (e.g. `--lowvram`) |
 | `COMFY_PORT` | `8188` | ComfyUI port |
-| `ANTHROPIC_API_KEY` | – | auth for the bundled `claude` CLI (see below) |
+| `ANTHROPIC_API_KEY` | – | *optional* API-key auth for `claude`; not needed if you use browser login (see below) |
 
 ## Run the FaceID workflow
 
@@ -102,18 +103,106 @@ Options: `--smoke` (512²/8 steps), `--steps N`, `--size WxH`, `--seed N`,
 ## Claude Code CLI
 
 The image bundles the [`claude`](https://docs.claude.com/en/docs/claude-code) CLI
-(native install, symlinked to `/usr/local/bin/claude`). Use it inside the
-container:
+(native install, symlinked to `/usr/local/bin/claude`). Its config dir is set to
+`/root/.claude` (`CLAUDE_CONFIG_DIR`), and `docker-compose.yml` mounts the
+`claude_config` volume there so the login survives container restarts.
+
+### Sign in with a Claude subscription (no API key)
+
+The container is headless, so `claude` uses the manual code-paste flow instead of
+opening a browser itself:
 
 ```bash
-docker exec -it <container> claude          # interactive
-docker exec -it <container> claude -p "..."  # one-shot / print mode
+docker compose exec comfyui claude     # or: docker exec -it <container> claude
 ```
 
-Authenticate with an API key (`-e ANTHROPIC_API_KEY=sk-ant-...` on `docker run`,
-or the commented line in `docker-compose.yml`), or run `claude login` once in an
-interactive exec. To keep the login across container restarts, mount a volume at
-`/root/.claude` and `/root/.claude.json`.
+1. Run `/login`, choose **"Claude account with subscription"**.
+2. Copy the printed URL into a browser on any machine, sign in, approve.
+3. Paste the authorization code it shows back into the terminal.
+
+Credentials land in `/root/.claude/` (the `claude_config` volume), so you only do
+this once. Use an interactive exec (`-it` / `compose exec`) — the initial login
+can't happen in `-p`/print mode. Plain `docker run` without the volume mount
+means logging in again on every fresh container.
+
+API-key auth is still available as an alternative: pass
+`-e ANTHROPIC_API_KEY=sk-ant-...`.
+
+## Deploy on RunPod
+
+RunPod runs a **prebuilt image** pulled from a registry — it does not build the
+Dockerfile for you. Flow: **build → push → template → pod**.
+
+### 1. Build and push (any machine with Docker — no GPU needed)
+
+```bash
+cd docker_setup
+docker build -t docker.io/<youruser>/comfyui-faceid:latest .
+docker push docker.io/<youruser>/comfyui-faceid:latest
+```
+
+`ghcr.io/<youruser>/…` works too. Keep the repo public, or add credentials under
+RunPod → **Settings → Container Registry Auth** and select them in the template.
+RunPod pods don't expose a Docker daemon, so you can't build on the pod itself.
+
+### 2. Create a template
+
+Console → **Templates → New Template**:
+
+| Field | Value |
+|-------|-------|
+| Container Image | `docker.io/<youruser>/comfyui-faceid:latest` |
+| Container Disk | `25 GB` (image + input/output scratch) |
+| Volume Disk | `30 GB` (caches the ~12 GB of weights) |
+| Volume Mount Path | `/opt/ComfyUI/models` |
+| Expose HTTP Ports | `8188,8080` |
+| Docker Command | *leave empty* — uses the image `ENTRYPOINT` |
+
+Environment variables:
+
+| var | value | why |
+|-----|-------|-----|
+| `DOWNLOAD_IN_BACKGROUND` | `1` | pod looks "ready" fast; weights stream in behind ComfyUI |
+| `FILEBROWSER_ENABLE` | `1` | file browser on :8080 |
+| `FB_PASS` | *your choice* | FileBrowser password |
+| `CLAUDE_CONFIG_DIR` | `/opt/ComfyUI/models/.claude` | puts the `claude` login on the persistent volume (a pod has only one volume, so it rides along with the weights) |
+| `COMFY_EXTRA_ARGS` | `--lowvram` | *only* for GPUs under ~16 GB |
+
+### 3. Deploy a pod
+
+**Pods → Deploy** → pick a GPU with **16 GB+ VRAM** for SDXL (RTX 4000/A4000 Ada,
+or RTX 2000 Ada with `--lowvram`) → select your template → deploy On-Demand or
+Spot.
+
+### 4. First boot
+
+Pod logs show the torch/CUDA check, then model downloads. With
+`DOWNLOAD_IN_BACKGROUND=1` ComfyUI is up immediately and the ~12 GB of weights
+land over the next few minutes (`/var/log/download_models.log`); a workflow run
+fails until the weights it needs are present. If the volume already holds them
+from a prior run, startup is instant.
+
+### 5. Connect
+
+* Pod → **Connect → HTTP Service [Port 8188]** → `https://<podid>-8188.proxy.runpod.net` — ComfyUI UI
+* Port 8080 → FileBrowser (`admin` / your `FB_PASS`) to browse `output/`
+
+### 6. Run the workflow / sign into Claude
+
+Pod → **Connect → Start Web Terminal** (or SSH). You are already inside the
+container — no `docker exec`:
+
+```bash
+claude          # /login → "Claude account with subscription" → open the URL in
+                # your own browser → paste the code back (persists on the volume)
+
+python /opt/run_workflow.py /opt/workflows/ipadapter_juggernaut_faceid.json --smoke
+```
+
+Outputs go to `/opt/ComfyUI/output/`.
+
+**Stopping** the pod wipes the container disk but keeps the volume (small storage
+fee), so weights and the Claude login survive to the next start.
 
 ## Adding / changing models
 
@@ -144,7 +233,6 @@ over it, or rebuild, to change the baked default.)
   releases). If a repo moves, update `config/models.txt`.
 * **GPU required** at runtime (`--gpus all` / NVIDIA Container Toolkit). The build
   does not need a GPU.
-* **RunPod:** push the image to a registry and use it as a custom template with
-  container start command left as the image `ENTRYPOINT`. Expose HTTP ports 8188
-  and (optionally) 8080. Set `DOWNLOAD_IN_BACKGROUND=1` if you want the pod to
-  look "ready" quickly while weights stream in.
+* **RunPod:** see [Deploy on RunPod](#deploy-on-runpod) for the full walkthrough
+  (build/push, template settings, volume layout, connecting, and running `claude`
+  from the pod's web terminal).
