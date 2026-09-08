@@ -8,7 +8,7 @@
 #     start by /opt/entrypoint.sh from the URLs in config/models.txt.
 #
 # Build:  docker build -t comfyui-faceid:latest .
-# Run:    docker run --gpus all -p 8188:8188 -p 8080:8080 comfyui-faceid:latest
+# Run:    docker run --gpus all -p 8188:8188 -p 8080:8080 -p 8888:8888 comfyui-faceid:latest
 ###############################################################################
 
 ARG CUDA_IMAGE=nvidia/cuda:12.8.0-cudnn-runtime-ubuntu24.04
@@ -58,6 +58,12 @@ RUN pip install -r /tmp/requirements-extra.txt
 # --- FileBrowser (started only when FILEBROWSER_ENABLE=1) --------------
 RUN curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
 
+# --- JupyterLab (started only when JUPYTER_ENABLE=1) ------------------
+# `ipykernel` is required so notebooks can run against the venv Python;
+# `jupyterlab` alone does not pull it in. Bump these pins to a current
+# release at build time as needed.
+RUN pip install "jupyterlab==4.4.7" "ipykernel==6.30.0"
+
 # --- Claude Code CLI --------------------------------------------------
 # Native install (no Node needed); lands in /root/.local/bin. Symlink onto the
 # default PATH so `docker exec <container> claude ...` just works.
@@ -79,7 +85,7 @@ COPY run_workflow.py         /opt/run_workflow.py
 RUN chmod +x /opt/entrypoint.sh /opt/download_models.sh
 
 WORKDIR ${COMFYUI_DIR}
-EXPOSE 8188 8080
+EXPOSE 8188 8080 8888
 
 # No VOLUME is declared on purpose: by default the container is stateless and
 # re-downloads weights each start. Mount your own volume at /opt/ComfyUI/models

@@ -8,10 +8,13 @@ services:
     ports:
       - "8188:8188"   # ComfyUI API / UI
       - "8080:8080"   # FileBrowser (only if FILEBROWSER_ENABLE=1)
+      - "8888:8888"   # JupyterLab (only if JUPYTER_ENABLE=1)
     environment:
       FILEBROWSER_ENABLE: "1"
       FB_USER: "admin"
       FB_PASS: "changeme"
+      JUPYTER_ENABLE: "1"
+      JUPYTER_TOKEN: "changeme"
       DOWNLOAD_IN_BACKGROUND: "0"   # "1" = start server first, fetch weights in bg
       # HF_TOKEN: "hf_xxx"          # only needed for gated repos
       # STRICT_SHA256: "1"          # fail the start on any checksum mismatch
