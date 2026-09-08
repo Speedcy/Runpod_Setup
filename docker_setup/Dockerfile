@@ -62,7 +62,9 @@ RUN curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh |
 # `ipykernel` is required so notebooks can run against the venv Python;
 # `jupyterlab` alone does not pull it in. Bump these pins to a current
 # release at build time as needed.
-RUN pip install "jupyterlab==4.4.7" "ipykernel==6.30.0"
+# NOTE: jupyterlab 4.4.7 explicitly excludes ipykernel 6.30.0 (it depends on
+# `ipykernel!=6.30.0,>=6.5.0`), so pin the 6.30.1 bugfix release instead.
+RUN pip install "jupyterlab==4.4.7" "ipykernel==6.30.1"
 
 # --- Claude Code CLI --------------------------------------------------
 # Native install (no Node needed); lands in /root/.local/bin. Symlink onto the
