@@ -1,8 +1,8 @@
-/workspace/docker_setup/ is ready — a from-scratch image with zero persistent-storage dependency, models streamed in at container start.
+/workspace/comfyui_ip_adapter/ is ready — a from-scratch image with zero persistent-storage dependency, models streamed in at container start.
 
   Layout
 
-  docker_setup/
+  comfyui_ip_adapter/
   ├── Dockerfile                 CUDA 12.8 base → torch cu128 → ComfyUI v0.26.2 → 5 custom nodes → FaceID extras → claude CLI
   ├── docker-compose.yml         GPU, ports 8188/8080, optional model-cache volume
   ├── entrypoint.sh              FileBrowser (opt) → download models → exec ComfyUI
@@ -30,7 +30,7 @@
   - run_workflow.py + all shell scripts pass syntax/functional checks
 
   Not build-tested — there's no Docker daemon in this pod. Build on a machine with Docker + NVIDIA Container Toolkit:
-  cd docker_setup && docker build -t comfyui-faceid:latest .
+  cd comfyui_ip_adapter && docker build -t comfyui-faceid:latest .
   docker run --gpus all -p 8188:8188 comfyui-faceid:latest
 
   README.md has the full env-var reference (DOWNLOAD_IN_BACKGROUND, SKIP_MODEL_DOWNLOAD, HF_TOKEN, STRICT_SHA256, FILEBROWSER_ENABLE, …) and RunPod notes. If you push this to a registry, it works as a RunPod custom

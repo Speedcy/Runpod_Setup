@@ -3,6 +3,9 @@ name: Build and Push Docker Image
 on:
   push:
     branches: [main]
+    paths:
+      - 'comfyui_ip_adapter/**'
+      - '.github/workflows/push_comfyui_ip_adapter.yml'
   workflow_dispatch:
 
 env:
@@ -32,12 +35,12 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./docker_setup
+          context: ./comfyui_ip_adapter
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=comfyui_ip_adapter
+          cache-to: type=gha,mode=max,scope=comfyui_ip_adapter
     
     

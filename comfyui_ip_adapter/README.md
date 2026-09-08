@@ -9,7 +9,7 @@ they are downloaded on container start from the URLs in
 ## Contents
 
 ```
-docker_setup/
+comfyui_ip_adapter/
 ├── Dockerfile                 image definition (torch cu128, ComfyUI, nodes, FaceID extras, claude CLI)
 ├── docker-compose.yml         convenience runner (GPU, ports, optional model cache volume)
 ├── entrypoint.sh              start FileBrowser (opt) → download models → exec ComfyUI
@@ -31,7 +31,7 @@ docker_setup/
 ## Build
 
 ```bash
-cd docker_setup
+cd comfyui_ip_adapter
 docker build -t comfyui-faceid:latest .
 ```
 
@@ -154,7 +154,7 @@ Dockerfile for you. Flow: **build → push → template → pod**.
 ### 1. Build and push (any machine with Docker — no GPU needed)
 
 ```bash
-cd docker_setup
+cd comfyui_ip_adapter
 docker build -t docker.io/<youruser>/comfyui-faceid:latest .
 docker push docker.io/<youruser>/comfyui-faceid:latest
 ```
@@ -189,7 +189,7 @@ You should see `Login Succeeded`.
 #### 3. Build the image
 
 ```bash
-cd docker_setup
+cd comfyui_ip_adapter
 docker build -t ghcr.io/YOUR_GITHUB_USERNAME/comfyui-faceid:latest .
 ```
 
