@@ -217,13 +217,15 @@ so the pod can pull the private image in Step 2 (creating the template).
 
 Console → **Templates → New Template**:
 
+No persistent volume is used — everything (image, models, outputs, `claude`
+login) lives on the container disk and is wiped whenever the pod is stopped or
+removed.
+
 | Field | Value |
 |-------|-------|
 | Container Image | `docker.io/<youruser>/comfyui-faceid:latest` |
-| Container Disk | `25 GB` (image + input/output scratch) |
-| Volume Disk | `30 GB` (caches the ~12 GB of weights) |
-| Volume Mount Path | `/opt/ComfyUI/models` |
-| Expose HTTP Ports | `8188,8080` |
+| Container Disk | `50 GB` (image ~10–14 GB + weights ~12 GB + input/output/scratch) |
+| Expose HTTP Ports | `8188,8080,8888` |
 | Docker Command | *leave empty* — uses the image `ENTRYPOINT` |
 
 Environment variables:
@@ -233,8 +235,18 @@ Environment variables:
 | `DOWNLOAD_IN_BACKGROUND` | `1` | pod looks "ready" fast; weights stream in behind ComfyUI |
 | `FILEBROWSER_ENABLE` | `1` | file browser on :8080 |
 | `FB_PASS` | *your choice* | FileBrowser password |
-| `CLAUDE_CONFIG_DIR` | `/opt/ComfyUI/models/.claude` | puts the `claude` login on the persistent volume (a pod has only one volume, so it rides along with the weights) |
+| `JUPYTER_ENABLE` | `1` | JupyterLab on :8888 |
+| `JUPYTER_TOKEN` | *your choice* | JupyterLab access token — required, or the port stays open to anyone |
 | `COMFY_EXTRA_ARGS` | `--lowvram` | *only* for GPUs under ~16 GB |
+
+If a port isn't listed in **Expose HTTP Ports**, RunPod never opens an HTTP
+proxy for it — the "Connect" panel shows it stuck on "Initializing" forever
+even though the process is running fine inside the container. This is the
+usual cause of JupyterLab looking stuck: `8888` missing from that field.
+
+`CLAUDE_CONFIG_DIR` stays at its Dockerfile default (`/root/.claude`, on the
+container disk) — no need to override it. Without a volume, the `claude` login
+does not survive a pod stop/restart; re-run `/login` after each fresh pod.
 
 ### 3. Deploy a pod
 
@@ -247,13 +259,15 @@ Spot.
 Pod logs show the torch/CUDA check, then model downloads. With
 `DOWNLOAD_IN_BACKGROUND=1` ComfyUI is up immediately and the ~12 GB of weights
 land over the next few minutes (`/var/log/download_models.log`); a workflow run
-fails until the weights it needs are present. If the volume already holds them
-from a prior run, startup is instant.
+fails until the weights it needs are present. Without a persistent volume this
+download repeats on every fresh pod — there is nothing to cache it.
 
 ### 5. Connect
 
 * Pod → **Connect → HTTP Service [Port 8188]** → `https://<podid>-8188.proxy.runpod.net` — ComfyUI UI
 * Port 8080 → FileBrowser (`admin` / your `FB_PASS`) to browse `output/`
+* Port 8888 → JupyterLab (append `?token=<JUPYTER_TOKEN>` to the URL, or paste
+  the token when prompted)
 
 ### 6. Run the workflow / sign into Claude
 
@@ -262,15 +276,16 @@ container — no `docker exec`:
 
 ```bash
 claude          # /login → "Claude account with subscription" → open the URL in
-                # your own browser → paste the code back (persists on the volume)
+                # your own browser → paste the code back (does not survive a stop)
 
 python /opt/run_workflow.py /opt/workflows/ipadapter_juggernaut_faceid.json --smoke
 ```
 
 Outputs go to `/opt/ComfyUI/output/`.
 
-**Stopping** the pod wipes the container disk but keeps the volume (small storage
-fee), so weights and the Claude login survive to the next start.
+**Stopping** the pod wipes the container disk entirely — weights, outputs and
+the Claude login are all gone on the next start. Save anything you want to keep
+(e.g. via FileBrowser) before stopping the pod.
 
 ## Adding / changing models
 
@@ -302,5 +317,5 @@ over it, or rebuild, to change the baked default.)
 * **GPU required** at runtime (`--gpus all` / NVIDIA Container Toolkit). The build
   does not need a GPU.
 * **RunPod:** see [Deploy on RunPod](#deploy-on-runpod) for the full walkthrough
-  (build/push, template settings, volume layout, connecting, and running `claude`
-  from the pod's web terminal).
+  (build/push, template settings, connecting, and running `claude` from the
+  pod's web terminal).

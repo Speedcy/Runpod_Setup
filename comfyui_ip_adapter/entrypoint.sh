@@ -50,11 +50,16 @@ if [ "${JUPYTER_ENABLE:-0}" = "1" ]; then
         echo "!! JUPYTER_ENABLE=1 but JUPYTER_TOKEN is empty — JupyterLab will be OPEN to anyone who can reach :8888"
     fi
     echo "-- JupyterLab on :8888  (root=${JUPYTER_ROOT:-$COMFYUI_DIR})"
+    # allow_origin/trust_xheaders: required behind RunPod's reverse proxy, whose
+    # public domain differs from what the server sees internally — without
+    # these, jupyter_server's Origin check 403s the terminal/kernel websockets.
     nohup jupyter lab \
         --ip=0.0.0.0 --port=8888 --no-browser --allow-root \
         --ServerApp.token="$JUPYTER_TOKEN" \
         --ServerApp.password='' \
         --ServerApp.root_dir="${JUPYTER_ROOT:-$COMFYUI_DIR}" \
+        --ServerApp.allow_origin='*' \
+        --ServerApp.trust_xheaders=True \
         >/var/log/jupyterlab.log 2>&1 &
 fi
 
@@ -71,9 +76,9 @@ else
 fi
 
 # --- 3. seed bundled workflows into the ComfyUI "Workflows" menu -------
-# The persistent RunPod volume is mounted at $COMFYUI_DIR/models only, so
-# $COMFYUI_DIR/user/default/workflows/ is empty on every fresh pod and must be
-# repopulated here, before ComfyUI starts and scans that folder.
+# The container disk is not persistent, so $COMFYUI_DIR/user/default/workflows/
+# is empty on every fresh pod and must be repopulated here, before ComfyUI
+# starts and scans that folder.
 #
 # Safety: we never clobber a workflow the user created/edited in the UI. A file
 # that already exists at the destination is kept as-is; only missing files are
