@@ -1,6 +1,6 @@
 Tester la nouvel image docker
 -> jupytrer lab à tester après fix sur websocket
--> download des models 
+-> download des models (erreur de download depuis HF à gérer avec si besoin se créer un compte pour augmenter le taux de succeed)
 
 ls -la /opt/ComfyUI/models/checkpoints/
 
@@ -22,6 +22,8 @@ ls -la /opt/ComfyUI/models/checkpoints/
 - Telkecharger lora existant ? Civit AI ?
 https://civitai.com/models/1098033/realism-lora-by-stable-yogi-pony
 
-- Qwen 3.8 + Opencode
+- tester Qwen 3.8 + Opencode
+
+mettre à jour la config ~/.config/opencode/opencode.json avec la bonne url associée au pod id 
 
 

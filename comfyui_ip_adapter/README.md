@@ -236,13 +236,31 @@ Environment variables:
 | `FILEBROWSER_ENABLE` | `1` | file browser on :8080 |
 | `FB_PASS` | *your choice* | FileBrowser password |
 | `JUPYTER_ENABLE` | `1` | JupyterLab on :8888 |
-| `JUPYTER_TOKEN` | *your choice* | JupyterLab access token — required, or the port stays open to anyone |
+| `JUPYTER_TOKEN` | *your choice* | JupyterLab access token — set it; see the "Initializing" note below |
 | `COMFY_EXTRA_ARGS` | `--lowvram` | *only* for GPUs under ~16 GB |
 
-If a port isn't listed in **Expose HTTP Ports**, RunPod never opens an HTTP
-proxy for it — the "Connect" panel shows it stuck on "Initializing" forever
-even though the process is running fine inside the container. This is the
-usual cause of JupyterLab looking stuck: `8888` missing from that field.
+**JupyterLab port 8888 shows "Initializing" — this is expected with a token.**
+
+RunPod's port-readiness probe wants a `200` on `GET /`. JupyterLab with a token
+redirects `/` to its login page, so the probe never flips the badge — even
+though the server is up and the proxy works. It is **cosmetic**. Connect anyway:
+
+```
+https://<podid>-8888.proxy.runpod.net/lab?token=<JUPYTER_TOKEN>
+```
+
+`entrypoint.sh` prints this exact URL (with the real pod id and token) in the
+boot log. `<podid>` is also the first part of the ComfyUI URL on port 8188.
+
+Only if you would rather have a green badge than a token: leave `JUPYTER_TOKEN`
+**unset** — JupyterLab then serves `/lab` with `200` and the badge goes "Ready",
+but anyone with the (unguessable) proxy URL then has a root shell in the
+container, so don't do this with the `claude_config` volume mounted.
+
+Other causes of a stuck badge: `8888` missing from **Expose HTTP Ports**; ports
+added to an already-running pod (do a full **Stop → Start**, not "Restart"); or
+JupyterLab actually failing to start — `entrypoint.sh` then dumps
+`/var/log/jupyterlab.log` to the pod log (`jupyter|` lines).
 
 `CLAUDE_CONFIG_DIR` stays at its Dockerfile default (`/root/.claude`, on the
 container disk) — no need to override it. Without a volume, the `claude` login

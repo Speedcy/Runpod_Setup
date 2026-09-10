@@ -12,7 +12,14 @@
 #   DOWNLOAD_IN_BACKGROUND=1     fetch models in background; start server now
 #   FILEBROWSER_ENABLE=1         run FileBrowser (FB_USER / FB_PASS, default admin/admin)
 #   JUPYTER_ENABLE=1             run JupyterLab on :8888
-#   JUPYTER_TOKEN                access token for JupyterLab (empty = no auth, unsafe)
+#   JUPYTER_TOKEN                access token for JupyterLab (recommended). With a
+#                               token, RunPod's "Connect" badge for :8888 stays
+#                               on "Initializing" by design (its readiness probe
+#                               wants a 200 on `/`, JupyterLab redirects to a
+#                               login) — this is cosmetic, the port works: open
+#                               the printed https://<pod>-8888...&/lab?token=URL.
+#                               Empty = no auth (badge goes green, but anyone
+#                               with the proxy URL gets a root shell).
 #   JUPYTER_ROOT                 JupyterLab root dir (default: $COMFYUI_DIR)
 #   HF_TOKEN / STRICT_SHA256     passed through to download_models.sh
 ###############################################################################
@@ -46,21 +53,59 @@ fi
 # --- 1b. JupyterLab (optional) ------------------------------------------
 if [ "${JUPYTER_ENABLE:-0}" = "1" ]; then
     JUPYTER_TOKEN="${JUPYTER_TOKEN:-}"
+    JUPYTER_ROOT="${JUPYTER_ROOT:-$COMFYUI_DIR}"
+    mkdir -p "$JUPYTER_ROOT"
+
+    # Auth mode vs. RunPod's port-readiness probe (see the header comment):
+    #   token set  -> `GET /` redirects to the login page; RunPod's probe wants a
+    #                 200 there, so the :8888 "Connect" badge stays "Initializing".
+    #                 Cosmetic — the proxy works, reach it via the ?token= URL
+    #                 printed below.
+    #   token empty -> `GET /` resolves to `/lab` (200), badge goes green, but the
+    #                 unguessable proxy URL is then the ONLY thing protecting a
+    #                 root shell.
+    AUTH_ARGS=(--ServerApp.token="$JUPYTER_TOKEN" --ServerApp.password='')
+    JUPYTER_URL="https://${RUNPOD_POD_ID:-<podid>}-8888.proxy.runpod.net/lab"
     if [ -z "$JUPYTER_TOKEN" ]; then
-        echo "!! JUPYTER_ENABLE=1 but JUPYTER_TOKEN is empty — JupyterLab will be OPEN to anyone who can reach :8888"
+        AUTH_ARGS+=(--ServerApp.disable_check_xsrf=True)
+        echo "!! JupyterLab: NO TOKEN — anyone with $JUPYTER_URL gets a root shell"
+    else
+        echo "-- JupyterLab: token set — RunPod's :8888 badge stays 'Initializing' (cosmetic)."
+        echo "   Open: ${JUPYTER_URL}?token=${JUPYTER_TOKEN}"
     fi
-    echo "-- JupyterLab on :8888  (root=${JUPYTER_ROOT:-$COMFYUI_DIR})"
+
+    echo "-- JupyterLab on :8888  (root=$JUPYTER_ROOT)"
     # allow_origin/trust_xheaders: required behind RunPod's reverse proxy, whose
     # public domain differs from what the server sees internally — without
     # these, jupyter_server's Origin check 403s the terminal/kernel websockets.
     nohup jupyter lab \
         --ip=0.0.0.0 --port=8888 --no-browser --allow-root \
-        --ServerApp.token="$JUPYTER_TOKEN" \
-        --ServerApp.password='' \
-        --ServerApp.root_dir="${JUPYTER_ROOT:-$COMFYUI_DIR}" \
+        --ServerApp.root_dir="$JUPYTER_ROOT" \
         --ServerApp.allow_origin='*' \
+        --ServerApp.allow_remote_access=True \
         --ServerApp.trust_xheaders=True \
+        "${AUTH_ARGS[@]}" \
         >/var/log/jupyterlab.log 2>&1 &
+    JUPYTER_PID=$!
+
+    # Health-check: on a startup crash, dump the log to *stdout* (the RunPod pod
+    # log) so the cause is visible without a shell into the container.
+    jupyter_ok=0
+    for _ in $(seq 1 30); do
+        if ! kill -0 "$JUPYTER_PID" 2>/dev/null; then
+            echo "!! JupyterLab exited during startup — /var/log/jupyterlab.log follows:"
+            sed 's/^/   jupyter| /' /var/log/jupyterlab.log 2>/dev/null || true
+            break
+        fi
+        code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8888/lab 2>/dev/null || true)"
+        if [ -n "$code" ] && [ "$code" != "000" ]; then
+            jupyter_ok=1
+            echo "-- JupyterLab is serving on :8888 (pid $JUPYTER_PID, GET /lab -> HTTP $code)"
+            break
+        fi
+        sleep 1
+    done
+    [ "$jupyter_ok" = 1 ] || echo "!! JupyterLab not answering on :8888 after 30s — see /var/log/jupyterlab.log"
 fi
 
 # --- 2. models ------------------------------------------------------
