@@ -1,0 +1,34 @@
+services:
+  vllm-qwen3:
+    build:
+      context: .
+      args:
+        VLLM_IMAGE: vllm/vllm-openai:v0.29.0-cu129
+    image: vllm-qwen3:latest
+    ports:
+      - "8000:8000"   # OpenAI-compatible API
+    environment:
+      MODEL_ID: "Qwen/Qwen3.8-27B"
+      VLLM_API_KEY: "changeme"
+      GPU_MEMORY_UTILIZATION: "0.90"
+      # MAX_MODEL_LEN: "65536"        # lower this on VRAM-constrained GPUs
+      # QUANTIZATION: "fp8"           # for ~48GB-class GPUs instead of 80GB
+      # KV_CACHE_DTYPE: "fp8"         # pair with QUANTIZATION=fp8
+      # TENSOR_PARALLEL_SIZE: "1"
+      # HF_TOKEN: "hf_xxx"            # only needed for gated repos
+      # VLLM_EXTRA_ARGS: "--max-num-seqs 16"
+    volumes:
+      # OPTIONAL: cache the downloaded model weights across restarts. Remove
+      # for a truly stateless container (re-downloads from HF every start).
+      - hf_cache:/root/.cache/huggingface
+    gpus: all
+    # Older Compose without `gpus:` — use this instead:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - { driver: nvidia, count: 1, capabilities: [gpu] }
+    restart: unless-stopped
+
+volumes:
+  hf_cache:

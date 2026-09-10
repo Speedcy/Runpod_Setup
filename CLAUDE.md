@@ -5,6 +5,23 @@ RunPod. Each top-level folder is one self-contained image with its own Dockerfil
 its own GHCR image name, and its own GitHub Actions workflow that builds & pushes
 it. Folders do not share code or build context.
 
+## The user has a limited internet connection — ask before spending bandwidth
+
+Before running anything likely to transfer **more than ~200MB**, ask first and
+wait for a yes — don't just do it, even as a "sanity check" or because it seems
+like the obviously helpful next step. This includes (non-exhaustive):
+`docker build` / `docker pull` / `docker compose up --build` (base images here
+are routinely multi-GB), cloning large repos, downloading model weights or
+datasets, and any other large fetch. When unsure whether something crosses
+~200MB, ask rather than guess.
+
+Docker images specifically: Claude must never run `docker build`, `docker pull`,
+`docker compose up/build`, or anything else that downloads/builds an image on
+the user's machine — not even as a "sanity check" — unless the user explicitly
+asks for it in that turn. Validate Dockerfiles/scripts by other means instead
+(`bash -n`, linters, reading them, letting the repo's own GitHub Actions
+workflow build in CI on push).
+
 ## Layout
 
 ```

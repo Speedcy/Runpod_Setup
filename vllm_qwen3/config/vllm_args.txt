@@ -1,0 +1,8 @@
+# Extra CLI flags appended to `vllm serve` at container start.
+# One flag (or flag + value) per line. Lines starting with # are ignored.
+# Baked into the image, but you can add more at runtime via VLLM_EXTRA_ARGS
+# without rebuilding.
+#
+# Examples:
+# --max-num-seqs 16
+# --disable-log-requests

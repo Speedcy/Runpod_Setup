@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "runpod-qwen3": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "RunPod Qwen3.8-27B (vLLM)",
+      "options": {
+        "baseURL": "https://<POD_ID>-8000.proxy.runpod.net/v1",
+        "apiKey": "{env:VLLM_API_KEY}"
+      },
+      "models": {
+        "qwen3.8-27b": {
+          "name": "Qwen3.8-27B (RunPod vLLM)",
+          "limit": { "context": 262144, "output": 32768 }
+        }
+      }
+    }
+  }
+}
